@@ -1,17 +1,20 @@
 package main
 
 import (
+	"fmt"
 	"sync"
+	"time"
 )
 
 type user struct {
 	ID int64
 }
 
-func getOne(wg *sync.WaitGroup, poolNum int64, receive <-chan int64, response chan user) {
+func getOne(wg *sync.WaitGroup, poolNum int64, receive <-chan int64, response chan<- user) {
 	defer wg.Done()
 	for id := range receive {
-		// time.Sleep(time.Millisecond * 100)
+		fmt.Printf("worker-%d take element %d\n", poolNum, id)
+		time.Sleep(time.Millisecond * 100)
 		response <- user{ID: id}
 	}
 }
@@ -31,21 +34,19 @@ func getBatch(n int64, pool int64) (res []user) { // n - num of users //pool - n
 
 	for i := int64(0); i < n; i++ {
 		receive <- i
-		res = append(res, <-response)
 	}
 
 	//done
 	close(receive)
-	close(response)
 	wg.Wait()
 
-	// for i := int64(0); i < n; i++ {
-
-	// }
-
+	for i := int64(0); i < n; i++ {
+		res = append(res, <-response)
+	}
+	close(response)
 	return res
 }
 
-// func main() {
-// 	fmt.Println(getBatch(100, 10))
-// }
+func main() {
+	fmt.Println(getBatch(100, 10))
+}
